@@ -3,6 +3,7 @@ import { getOrderById, payOrder } from "../services/order";
 
 type OrderDetailProps = {
   onTrack: () => void;
+  onAddOrder: () => void;
 };
 
 type OrderItem = {
@@ -30,7 +31,7 @@ type OrderData = {
   orderItems: OrderItem[];
 };
 
-export default function OrderDetail({ onTrack }: OrderDetailProps) {
+export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -259,6 +260,10 @@ export default function OrderDetail({ onTrack }: OrderDetailProps) {
 
               <button onClick={onTrack} className="mt-4 w-full rounded-2xl bg-green-600 px-6 py-4 text-sm font-bold text-white transition hover:bg-green-700">
                 Lacak Pesanan →
+              </button>
+
+              <button onClick={onAddOrder} className="mt-3 w-full rounded-2xl border border-green-600 bg-white px-6 py-4 text-sm font-bold text-green-700 transition hover:bg-green-50">
+                + Tambah Pesanan
               </button>
             </>
           )}

@@ -9,7 +9,7 @@ type OrderProps = {
 };
 
 export default function Order({ tableId, customerName, onOrderCreated }: OrderProps) {
-  const { items, increaseQuantity, decreaseQuantity, removeFromCart, total } = useCart();
+  const { items, increaseQuantity, decreaseQuantity, removeFromCart, clearCart, total } = useCart();
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,6 +46,7 @@ export default function Order({ tableId, customerName, onOrderCreated }: OrderPr
       const orderId = response.data.data.id;
       console.log("ORDER ID :", orderId);
       sessionStorage.setItem("customerOrderId", String(orderId));
+      clearCart();
       onOrderCreated();
 
       setSuccess("Pesanan berhasil dibuat!");

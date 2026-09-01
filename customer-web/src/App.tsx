@@ -3,7 +3,7 @@ import { CartProvider } from "./context/CartContext";
 import Home from "./pages/home";
 import Order from "./pages/order";
 import OrderDetail from "./pages/orderDetail";
-import CustomerEntry from "./pages/CustomerEntry";
+import CustomerEntry from "./pages/customerEntry";
 import Tracking from "./pages/tracking";
 
 import { getTableIdFromUrl } from "./utils/table";
@@ -85,7 +85,7 @@ function App() {
       ) : page === "order" ? (
         <Order tableId={table.id} customerName={customerName} onOrderCreated={() => setPage("detail")} />
       ) : page === "detail" ? (
-        <OrderDetail onTrack={() => setPage("tracking")} />
+        <OrderDetail onTrack={() => setPage("tracking")} onAddOrder={() => setPage("home")} />
       ) : (
         <Tracking />
       )}
