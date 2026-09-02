@@ -1,11 +1,12 @@
 import { useState } from "react";
 
 type CustomerEntryProps = {
+  tableId: number;
   tableNumber: number;
   onContinue: (name: string) => void;
 };
 
-export default function CustomerEntry({ tableNumber, onContinue }: CustomerEntryProps) {
+export default function CustomerEntry({ tableId, tableNumber, onContinue }: CustomerEntryProps) {
   const [name, setName] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -16,6 +17,9 @@ export default function CustomerEntry({ tableNumber, onContinue }: CustomerEntry
     if (!trimmedName) {
       return;
     }
+
+    sessionStorage.setItem("customerName", trimmedName);
+    sessionStorage.setItem("tableId", String(tableId));
 
     onContinue(trimmedName);
   };

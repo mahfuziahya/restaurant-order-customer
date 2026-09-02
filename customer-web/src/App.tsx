@@ -74,6 +74,7 @@ function App() {
     <CartProvider>
       {page === "entry" ? (
         <CustomerEntry
+          tableId={table.id}
           tableNumber={table.number}
           onContinue={(name) => {
             setCustomerName(name);
