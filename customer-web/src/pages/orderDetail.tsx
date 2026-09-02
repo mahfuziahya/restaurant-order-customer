@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getOrderById, payOrder } from "../services/order";
+import { getOrderById, createPayment } from "../services/order";
+import { loadMidtransSnap } from "../services/midtrans";
 
 type OrderDetailProps = {
   onTrack: () => void;
@@ -35,7 +36,6 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "QRIS" | "CARD" | "TRANSFER">("QRIS");
 
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
@@ -123,14 +123,77 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
       setPaymentLoading(true);
       setPaymentError("");
 
-      const response = await payOrder(order.id, paymentMethod);
+      await loadMidtransSnap();
 
-      setOrder(response.data.data);
+      const response = await createPayment(order.id);
+
+      const token = response.data.data.token;
+
+      if (!token) {
+        throw new Error("Snap token tidak ditemukan.");
+      }
+
+      window.snap.pay(token, {
+        onSuccess: async () => {
+          console.log("PAYMENT SUCCESS");
+
+          // Tunggu webhook Midtrans memproses pembayaran
+          for (let i = 0; i < 10; i++) {
+            try {
+              const updatedOrder = await getOrderById(order.id);
+              const latestOrder = updatedOrder.data.data;
+
+              console.log("PAYMENT STATUS:", latestOrder.paymentStatus);
+              console.log("ORDER STATUS:", latestOrder.status);
+
+              setOrder(latestOrder);
+
+              if (latestOrder.paymentStatus === "PAID") {
+                console.log("DATABASE PAYMENT SUCCESS");
+                setPaymentLoading(false);
+                return;
+              }
+
+              // Tunggu 2 detik sebelum cek lagi
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+            } catch (error) {
+              console.error("CHECK PAYMENT STATUS ERROR:", error);
+            }
+          }
+
+          setPaymentLoading(false);
+        },
+
+        onPending: async () => {
+          console.log("PAYMENT PENDING");
+          setPaymentLoading(false);
+
+          // Ambil status terbaru dari backend
+          try {
+            const updatedOrder = await getOrderById(order.id);
+            setOrder(updatedOrder.data.data);
+          } catch (error) {
+            console.error("GET UPDATED ORDER ERROR:", error);
+          }
+        },
+
+        onError: () => {
+          console.log("PAYMENT ERROR");
+
+          setPaymentLoading(false);
+          setPaymentError("Pembayaran gagal. Silakan coba lagi.");
+        },
+
+        onClose: () => {
+          console.log("PAYMENT POPUP CLOSED");
+          setPaymentLoading(false);
+        },
+      });
     } catch (error: any) {
       console.error("PAYMENT ERROR:", error);
 
-      setPaymentError(error.response?.data?.message || "Gagal memproses pembayaran.");
-    } finally {
+      setPaymentError(error.response?.data?.message || error.message || "Gagal memproses pembayaran.");
+
       setPaymentLoading(false);
     }
   };
@@ -223,22 +286,7 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
             <>
               <h2 className="mt-6 text-lg font-extrabold text-slate-900">Pembayaran</h2>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {[
-                  { value: "QRIS", label: "QRIS" },
-                  { value: "CASH", label: "Cash" },
-                  { value: "CARD", label: "Card" },
-                  { value: "TRANSFER", label: "Transfer" },
-                ].map((method) => (
-                  <button
-                    key={method.value}
-                    onClick={() => setPaymentMethod(method.value as "CASH" | "QRIS" | "CARD" | "TRANSFER")}
-                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${paymentMethod === method.value ? "border-green-600 bg-green-50 text-green-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
-                  >
-                    {method.label}
-                  </button>
-                ))}
-              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Pilih metode pembayaran yang tersedia melalui Midtrans.</p>
 
               {paymentError && (
                 <div className="mt-4 rounded-xl bg-red-50 p-4">

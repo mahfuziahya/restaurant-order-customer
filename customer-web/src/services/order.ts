@@ -23,8 +23,6 @@ export const createOrder = async (payload: CreateOrderPayload) => {
 export const getOrderById = async (id: number) => {
   return axios.get(`${API_URL}/orders/${id}`);
 };
-export const payOrder = async (id: number, paymentMethod: "CASH" | "QRIS" | "CARD" | "TRANSFER") => {
-  return axios.patch(`${API_URL}/orders/${id}/pay`, {
-    paymentMethod,
-  });
+export const createPayment = async (id: number) => {
+  return axios.patch(`${API_URL}/orders/${id}/pay`);
 };

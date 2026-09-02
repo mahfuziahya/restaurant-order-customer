@@ -7,6 +7,7 @@ import orderRoutes from "./routes/order.routes";
 import orderItemRoutes from "./routes/orderItem.routes";
 import authRouter from "./routes/authRouter";
 import cookieParser from "cookie-parser";
+import paymentRoutes from "./routes/payment.routes";
 
 const app = express();
 
@@ -26,5 +27,6 @@ app.use("/menu-items", menuItemRoutes);
 app.use("/orders", orderRoutes);
 app.use("/order-items", orderItemRoutes);
 app.use("/auth", authRouter);
+app.use("/payments", paymentRoutes);
 
 export default app;

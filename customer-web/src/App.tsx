@@ -10,10 +10,22 @@ import { getTableIdFromUrl } from "./utils/table";
 import { getTableById, type Table } from "./services/table";
 
 function App() {
-  const [page, setPage] = useState<"entry" | "home" | "order" | "detail" | "tracking">("entry");
+  const [page, setPage] = useState<"entry" | "home" | "order" | "detail" | "tracking">(() => {
+    const savedName = sessionStorage.getItem("customerName");
+    const savedOrderId = sessionStorage.getItem("customerOrderId");
 
+    if (savedName && savedOrderId) {
+      return "detail";
+    }
+
+    if (savedName) {
+      return "home";
+    }
+
+    return "entry";
+  });
   const [table, setTable] = useState<Table | null>(null);
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState(() => sessionStorage.getItem("customerName") || "");
 
   const [loadingTable, setLoadingTable] = useState(true);
   const [tableError, setTableError] = useState("");

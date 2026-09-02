@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
 import { getSocketIO } from "../config/socket";
+import { createPaymentTransaction } from "../services/payment.service";
 
 export const getOrders = async (req: Request, res: Response) => {
   try {
@@ -223,19 +224,17 @@ export const getOrderById = async (req: Request, res: Response) => {
 export const payOrder = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { paymentMethod } = req.body;
-
-    const allowedMethods = ["CASH", "QRIS", "CARD", "TRANSFER"];
-
-    if (!allowedMethods.includes(paymentMethod)) {
-      return res.status(400).json({
-        message: "Invalid payment method",
-      });
-    }
 
     const order = await prisma.order.findUnique({
       where: {
         id: Number(id),
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
       },
     });
 
@@ -251,34 +250,31 @@ export const payOrder = async (req: Request, res: Response) => {
       });
     }
 
-    const updatedOrder = await prisma.order.update({
-      where: {
-        id: Number(id),
-      },
-      data: {
-        paymentMethod,
-        paymentStatus: "PAID",
-        status: "PROCESSING",
-      },
-      include: {
-        table: true,
-        orderItems: {
-          include: {
-            menuItem: true,
-          },
-        },
-      },
+    const total = order.orderItems.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+
+    const transaction = await createPaymentTransaction({
+      orderId: order.id,
+      grossAmount: total,
+      customerName: order.guestName || "Customer",
     });
 
     return res.status(200).json({
-      message: "Payment recorded successfully",
-      data: updatedOrder,
+      message: "Payment transaction created",
+      data: {
+        orderId: order.id,
+        token: transaction.token,
+        redirectUrl: transaction.redirect_url,
+        grossAmount: total,
+      },
     });
   } catch (error) {
-    console.error(error);
-
+    console.error("CREATE PAYMENT ERROR:", error);
+    if (error instanceof Error) {
+      console.error("ERROR MESSAGE:", error.message);
+    }
+    console.error("FULL ERROR:", error);
     return res.status(500).json({
-      message: "Internal Server Error",
+      message: "Failed to create payment transaction",
     });
   }
 };
