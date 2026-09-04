@@ -14,6 +14,7 @@ type OrderItem = {
     id: number;
     name: string;
     price: number;
+    image?: string | null;
   };
 };
 
@@ -213,7 +214,7 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
         </div>
 
         {/* STATUS */}
-        <div className="mb-5 rounded-3xl bg-white p-6 shadow-sm">
+        <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status Pesanan</p>
@@ -228,7 +229,7 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
         </div>
 
         {/* TABLE */}
-        <div className="mb-5 rounded-3xl bg-white p-6 shadow-sm">
+        <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex justify-between">
             <span className="text-sm text-slate-500">Nomor Meja</span>
 
@@ -244,20 +245,49 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
 
         {/* ITEMS */}
         <div className="mb-5 rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-extrabold text-slate-900">Pesanan</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-green-600">ORDER ITEMS</p>
 
-          <div className="mt-5 space-y-5">
+              <h2 className="mt-1 text-xl font-extrabold text-slate-900">Pesanan Anda</h2>
+            </div>
+
+            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">{order.orderItems.length} item</span>
+          </div>
+
+          <div className="mt-6 space-y-4">
             {order.orderItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-bold text-slate-900">{item.menuItem.name}</p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    {item.quantity} × Rp {item.menuItem.price.toLocaleString("id-ID")}
-                  </p>
+              <div key={item.id} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                {/* IMAGE */}
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-green-50">
+                  {item.menuItem.image ? (
+                    <img
+                      src={item.menuItem.image}
+                      alt={item.menuItem.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-3xl">🍽️</div>
+                  )}
                 </div>
 
-                <p className="font-bold text-slate-900">Rp {(item.menuItem.price * item.quantity).toLocaleString("id-ID")}</p>
+                {/* INFO */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{item.menuItem.name}</h3>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {item.quantity} × Rp {item.menuItem.price.toLocaleString("id-ID")}
+                      </p>
+                    </div>
+
+                    <p className="shrink-0 font-extrabold text-slate-900">Rp {(item.menuItem.price * item.quantity).toLocaleString("id-ID")}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -275,7 +305,7 @@ export default function OrderDetail({ onTrack, onAddOrder }: OrderDetailProps) {
         )}
 
         {/* TOTAL */}
-        <div className="rounded-3xl bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-slate-600">Total Pesanan</span>
 

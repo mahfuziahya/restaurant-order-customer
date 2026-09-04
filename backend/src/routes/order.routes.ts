@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { getOrders, getOrderById, createOrder, updateOrder, deleteOrder, payOrder } from "../controllers/order.controller";
+import { getOrders, getOrderById, createOrder, updateOrder, deleteOrder, payOrder, payCashOrder } from "../controllers/order.controller";
 
 const router = Router();
 
@@ -13,6 +13,7 @@ router.post("/", (req, res, next) => {
 router.put("/:id", updateOrder);
 router.patch("/:id", updateOrder);
 router.patch("/:id/pay", payOrder);
+router.patch("/:id/pay-cash", payCashOrder);
 router.delete("/:id", deleteOrder);
 
 export default router;

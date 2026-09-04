@@ -279,6 +279,96 @@ export const payOrder = async (req: Request, res: Response) => {
   }
 };
 
+export const payCashOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { cashReceived } = req.body;
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (order.paymentStatus === "PAID") {
+      return res.status(400).json({
+        message: "Order has already been paid",
+      });
+    }
+
+    const received = Number(cashReceived);
+
+    if (!Number.isFinite(received) || received <= 0) {
+      return res.status(400).json({
+        message: "Jumlah uang diterima tidak valid",
+      });
+    }
+
+    const total = order.orderItems.reduce((sum, item) => {
+      return sum + item.menuItem.price * item.quantity;
+    }, 0);
+
+    if (received < total) {
+      return res.status(400).json({
+        message: "Uang yang diterima kurang",
+        total,
+        cashReceived: received,
+        change: 0,
+      });
+    }
+
+    const change = received - total;
+
+    const updatedOrder = await prisma.order.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        paymentStatus: "PAID",
+        paymentMethod: "CASH",
+        status: "PROCESSING",
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      message: "Pembayaran CASH berhasil",
+      data: {
+        order: updatedOrder,
+        total,
+        cashReceived: received,
+        change,
+      },
+    });
+  } catch (error) {
+    console.error("CASH PAYMENT ERROR:", error);
+
+    return res.status(500).json({
+      message: "Gagal memproses pembayaran CASH",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 export const updateOrder = async (req: Request, res: Response) => {
   console.log("🔥 UPDATE ORDER MASUK");
   console.log("ORDER ID:", req.params.id);

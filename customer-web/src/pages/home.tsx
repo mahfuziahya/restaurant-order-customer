@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMenuItems, type MenuItem } from "../services/menu";
+import { getOrderById } from "../services/order";
 import { useCart } from "../context/CartContext";
 
 type HomeProps = {
@@ -7,14 +8,18 @@ type HomeProps = {
   tableNumber: number;
   customerName: string;
   onOrder: () => void;
+  onViewOrder: (orderId: number) => void;
+  onTrackOrder: (orderId: number) => void;
 };
 
-export default function Home({ tableId, tableNumber, customerName, onOrder }: HomeProps) {
+export default function Home({ tableId, tableNumber, customerName, onOrder, onViewOrder, onTrackOrder }: HomeProps) {
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   const { addToCart, items } = useCart();
 
@@ -40,6 +45,43 @@ export default function Home({ tableId, tableNumber, customerName, onOrder }: Ho
     };
 
     loadMenus();
+  }, []);
+
+  useEffect(() => {
+    const loadActiveOrders = async () => {
+      const savedOrderIds = JSON.parse(sessionStorage.getItem("customerOrderIds") || "[]");
+
+      if (!Array.isArray(savedOrderIds) || savedOrderIds.length === 0) {
+        setActiveOrders([]);
+        setLoadingOrders(false);
+        return;
+      }
+
+      try {
+        const orders = await Promise.all(
+          savedOrderIds.map(async (id: number) => {
+            try {
+              const response = await getOrderById(id);
+              return response.data.data;
+            } catch (error) {
+              console.error(`GET ORDER ${id} ERROR:`, error);
+
+              return null;
+            }
+          }),
+        );
+
+        const validOrders = orders.filter((order) => order && ["PENDING", "PROCESSING", "COOKING", "READY"].includes(order.status));
+
+        setActiveOrders(validOrders);
+      } catch (error) {
+        console.error("GET ACTIVE ORDERS ERROR:", error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    loadActiveOrders();
   }, []);
 
   // KATEGORI
@@ -112,6 +154,57 @@ export default function Home({ tableId, tableNumber, customerName, onOrder }: Ho
             <p className="mt-3 max-w-xl text-sm leading-6 text-green-100">Pilih menu yang Anda inginkan, masukkan ke pesanan, lalu lakukan pembayaran dengan mudah.</p>
           </div>
         </section>
+
+        {/* PESANAN BERJALAN */}
+        {!loadingOrders && activeOrders.length > 0 && (
+          <section className="mb-8">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-green-600">ORDER ANDA</p>
+
+              <h2 className="text-2xl font-extrabold text-slate-900">Pesanan Berjalan</h2>
+
+              <p className="mt-1 text-sm text-slate-500">Pantau pesanan yang sedang diproses.</p>
+            </div>
+
+            <div className="space-y-4">
+              {activeOrders.map((order) => (
+                <div key={order.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-500">Pesanan #{order.id}</p>
+
+                      <p className="mt-1 text-lg font-extrabold text-slate-900">
+                        {order.status === "PENDING" && "Menunggu Diproses"}
+
+                        {order.status === "PROCESSING" && "Pesanan Diproses"}
+
+                        {order.status === "COOKING" && "Sedang Dimasak"}
+
+                        {order.status === "READY" && "Pesanan Siap"}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">{order.paymentStatus === "PAID" ? "✓ SUDAH DIBAYAR" : "MENUNGGU PEMBAYARAN"}</span>
+
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">{order.status}</span>
+                      </div>
+                    </div>
+
+                    {order.paymentStatus === "PAID" ? (
+                      <button onClick={() => onTrackOrder(order.id)} className="rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700">
+                        Lihat Tracking →
+                      </button>
+                    ) : (
+                      <button onClick={() => onViewOrder(order.id)} className="rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700">
+                        Lanjutkan Pembayaran →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* SEARCH */}
         <section className="mb-6">

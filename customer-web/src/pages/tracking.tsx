@@ -22,6 +22,10 @@ type OrderData = {
   orderItems: OrderItem[];
 };
 
+type TrackingProps = {
+  onBackToMenu: () => void;
+};
+
 const getStatusLabel = (status: string) => {
   switch (status) {
     case "PENDING":
@@ -46,7 +50,7 @@ const getStatusLabel = (status: string) => {
 
 const statuses = ["PENDING", "PROCESSING", "COOKING", "READY", "COMPLETED"];
 
-export default function Tracking() {
+export default function Tracking({ onBackToMenu }: TrackingProps) {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,6 +157,7 @@ export default function Tracking() {
   const currentStatusIndex = statusSteps.findIndex((step) => step.status.toUpperCase() === order.status.toUpperCase());
   console.log("STATUS DB:", order.status);
   console.log("INDEX:", currentStatusIndex);
+
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-8">
       <div className="mx-auto max-w-2xl">
@@ -205,6 +210,11 @@ export default function Tracking() {
                 </div>
               );
             })}
+          </div>
+          <div className="mt-5 flex justify-center">
+            <button onClick={onBackToMenu} className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700">
+              ← Kembali ke Menu
+            </button>
           </div>
         </div>
       </div>

@@ -44,8 +44,23 @@ export default function Order({ tableId, customerName, onOrderCreated }: OrderPr
 
       const response = await createOrder(payload);
       const orderId = response.data.data.id;
+
       console.log("ORDER ID :", orderId);
+
+      // Simpan semua order customer
+      const savedOrders = JSON.parse(sessionStorage.getItem("customerOrderIds") || "[]");
+
+      const orderIds = Array.isArray(savedOrders) ? savedOrders : [];
+
+      if (!orderIds.includes(orderId)) {
+        orderIds.push(orderId);
+      }
+
+      sessionStorage.setItem("customerOrderIds", JSON.stringify(orderIds));
+
+      // Tetap simpan order terakhir/current order
       sessionStorage.setItem("customerOrderId", String(orderId));
+
       clearCart();
       onOrderCreated();
 
@@ -119,8 +134,21 @@ export default function Order({ tableId, customerName, onOrderCreated }: OrderPr
             <div key={item.menu.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex gap-4">
                 {/* IMAGE */}
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-3xl">🍽️</div>
-
+                {/* IMAGE */}
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-green-50">
+                  {item.menu.image ? (
+                    <img
+                      src={item.menu.image}
+                      alt={item.menu.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-3xl">🍽️</div>
+                  )}
+                </div>
                 {/* INFO */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
